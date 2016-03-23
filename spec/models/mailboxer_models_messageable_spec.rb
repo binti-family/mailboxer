@@ -32,9 +32,25 @@ describe "Mailboxer::Models::Messageable through User" do
     assert @entity2.reply_to_sender(@receipt,"Reply body")
   end
 
+  it "should be able to reply to sender without email" do
+    @receipt = @entity1.send_message(@entity2,"Body","Subject")
+
+    expect {
+      @entity2.reply_to_sender(@receipt,"Reply body", with_email: false)
+    }.not_to change { ActionMailer::Base.deliveries.count }
+  end
+
   it "should be able to reply to all" do
     @receipt = @entity1.send_message(@entity2,"Body","Subject")
     assert @entity2.reply_to_all(@receipt,"Reply body")
+  end
+
+  it "should be able to reply to all without email" do
+    @receipt = @entity1.send_message(@entity2,"Body","Subject")
+
+    expect {
+      @entity2.reply_to_all(@receipt,"Reply body", with_email: false)
+    }.not_to change { ActionMailer::Base.deliveries.count }
   end
 
   it "should be able to unread an owned Mailboxer::Receipt (mark as unread)" do
@@ -325,4 +341,17 @@ describe "Mailboxer::Models::Messageable through User" do
     expect(receipt.message.conversation.updated_at.utc.to_s).to eq expected
   end
 
+  context "with_email option" do
+    it "by default should send an email" do
+      expect {
+        @entity1.send_message(@entity2, "body", "subject")
+      }.to change { ActionMailer::Base.deliveries.count }.by(2)
+    end
+
+    it "with false should not send an email" do
+      expect {
+        @entity1.send_message(@entity2, "body", "subject", with_email: false)
+      }.not_to change { ActionMailer::Base.deliveries.count }
+    end
+  end
 end
